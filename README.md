@@ -38,4 +38,44 @@ tofu test
 - Ensure dependencies are installed (`npm ci` for Node projects, OpenTofu binary for infrastructure tests`).
 - Rerun tests after fixes to verify the issue is resolved.
 
+## Cluster and Namespace Setup
+
+Use the helper script to start a local Kubernetes cluster and create the
+required namespaces:
+
+```bash
+scripts/setup-namespaces.sh
+```
+
+The script:
+
+* starts a Minikube cluster if one is not running
+* creates separate namespaces for infrastructure (`infra`) and applications (`apps`)
+* applies OpenTofu configuration to the `infra` namespace
+* deploys Helm charts into the `apps` namespace
+
+### Manual steps
+
+The script above simply automates the following commands:
+
+```bash
+# Start a local cluster
+minikube start
+
+# Create namespaces
+kubectl create namespace infra
+kubectl create namespace apps
+
+# Apply infrastructure with OpenTofu
+cd infrastructure
+tofu init
+tofu apply -var="namespace=infra"
+
+# Deploy application with Helm
+helm upgrade --install app-release helm/app-chart --namespace apps --create-namespace
+```
+
+Using different namespaces ensures a clear separation between infrastructure
+components and application workloads.
+
 

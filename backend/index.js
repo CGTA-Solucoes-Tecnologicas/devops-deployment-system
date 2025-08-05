@@ -3,6 +3,18 @@ const app = express();
 
 app.use(express.json());
 
+// Simple in-memory metrics collection
+const metrics = {};
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    if (req.path === '/metrics') return;
+    const routePath = req.route ? req.route.path : req.path;
+    const key = `${req.method} ${routePath}`;
+    metrics[key] = (metrics[key] || 0) + 1;
+  });
+  next();
+});
+
 let books = [];
 let nextId = 1;
 
@@ -54,6 +66,20 @@ app.delete('/books/:id', (req, res) => {
   }
   books.splice(index, 1);
   res.status(204).send();
+});
+
+// Expose metrics in Prometheus format
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', 'text/plain; version=0.0.4');
+  const lines = [
+    '# HELP http_requests_total The total number of HTTP requests',
+    '# TYPE http_requests_total counter'
+  ];
+  for (const [key, value] of Object.entries(metrics)) {
+    const [method, path] = key.split(' ');
+    lines.push(`http_requests_total{method="${method}",path="${path}"} ${value}`);
+  }
+  res.send(lines.join('\n'));
 });
 
 module.exports = app;
