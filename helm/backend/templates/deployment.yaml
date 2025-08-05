@@ -1,20 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: backend
+      app: {{ .Chart.Name }}
   template:
     metadata:
       labels:
-        app: backend
+        app: {{ .Chart.Name }}
     spec:
       containers:
-        - name: backend
+        - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.port }}
+            - name: http
+              containerPort: {{ .Values.service.port }}
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Chart.Name }}-config
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
