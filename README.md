@@ -1,9 +1,90 @@
 # DevOps Kata
 
+- Build a deployment system with:
+  - Jenkins
+  - Helm
+  - OpenTofu
+  - Minikub or other kubernetes cluster manager
+  - Prometheus
+  - Grafana
+  
 This project demonstrates a simple deployment system for a sample application. It
 combines a React frontend with a Node.js backend and uses common DevOps tooling
 to automate infrastructure provisioning, application deployment, and
 observability.
+
+
+
+You need to be able to deploy an application with all this tools and you need 2 clusters (or 2 namespaces).
+One for the infra an other for the apps that will be deployed. The pipelines in Jenkins need to run tests and fail if tests fail.
+OpenTofu need to have automated tests as well, all apps deploed need to be integrated with Grafana and Prometheus by default.
+
+## Running Tests
+
+### Backend
+```bash
+cd backend
+npm test
+```
+
+### Frontend
+```bash
+cd frontend
+npm test -- --watchAll=false
+```
+
+### OpenTofu
+```bash
+cd infrastructure
+tofu test
+```
+
+## Interpreting Results and Troubleshooting
+
+- A summary of passed/failed tests is printed at the end of each run.
+- For failing tests, read the stack trace to identify which test and component failed.
+- Ensure dependencies are installed (`npm ci` for Node projects, OpenTofu binary for infrastructure tests`).
+- Rerun tests after fixes to verify the issue is resolved.
+
+## Cluster and Namespace Setup
+
+Use the helper script to start a local Kubernetes cluster and create the
+required namespaces:
+
+```bash
+scripts/setup-namespaces.sh
+```
+
+The script:
+
+* starts a Minikube cluster if one is not running
+* creates separate namespaces for infrastructure (`infra`) and applications (`apps`)
+* applies OpenTofu configuration to the `infra` namespace
+* deploys Helm charts into the `apps` namespace
+
+### Manual steps
+
+The script above simply automates the following commands:
+
+```bash
+# Start a local cluster
+minikube start
+
+# Create namespaces
+kubectl create namespace infra
+kubectl create namespace apps
+
+# Apply infrastructure with OpenTofu
+cd infrastructure
+tofu init
+tofu apply -var="namespace=infra"
+
+# Deploy application with Helm
+helm upgrade --install app-release helm/app-chart --namespace apps --create-namespace
+```
+
+Using different namespaces ensures a clear separation between infrastructure
+components and application workloads.
 
 ## Project Architecture
 - **Frontend:** React application served via a container image.

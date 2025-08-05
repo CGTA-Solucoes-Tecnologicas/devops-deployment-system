@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-grafana-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  frontend-dashboard.json: |-
+    {
+      "title": "Frontend Overview",
+      "panels": [
+        {
+          "type": "graph",
+          "title": "HTTP Request Rate",
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total[5m]))",
+              "legendFormat": "req/s"
+            }
+          ],
+          "datasource": "Prometheus",
+          "id": 1
+        }
+      ],
+      "schemaVersion": 16,
+      "version": 1
+    }
