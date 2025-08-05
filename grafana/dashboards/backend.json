@@ -1,0 +1,17 @@
+{
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Backend HTTP Requests",
+      "type": "stat",
+      "targets": [
+        {"expr": "sum(http_requests_total)"}
+      ],
+      "datasource": "Prometheus"
+    }
+  ],
+  "title": "Backend Dashboard",
+  "schemaVersion": 27,
+  "version": 1
+}

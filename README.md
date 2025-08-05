@@ -5,7 +5,6 @@ DevOps Kata
   - OpenTofu
   - Minikub or other kubernetes cluster manager
   - Prometheus
-  - Prometheus
   - Grafana
 
 You need to be able to deploy an application with all this tools and you need 2 clusters (or 2 namespaces).
