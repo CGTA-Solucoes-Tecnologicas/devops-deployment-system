@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import BookList from './BookList';
 import BookForm from './BookForm';
+import './styles.css';
 
-function App() {
+const api = 'http://localhost:3001';
+
+export default function App() {
   const [books, setBooks] = useState([]);
   const [editing, setEditing] = useState(null);
 
   const loadBooks = () => {
-    fetch('/books')
+    fetch(`${api}/books`)
       .then(res => res.json())
       .then(setBooks);
   };
@@ -17,7 +20,7 @@ function App() {
   }, []);
 
   const handleCreate = data => {
-    fetch('/books', {
+    fetch(`${api}/books`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -25,7 +28,7 @@ function App() {
   };
 
   const handleUpdate = (id, data) => {
-    fetch(`/books/${id}`, {
+    fetch(`${api}/books/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -36,19 +39,21 @@ function App() {
   };
 
   const handleDelete = id => {
-    fetch(`/books/${id}`, { method: 'DELETE' }).then(loadBooks);
+    fetch(`${api}/books/${id}`, { method: 'DELETE' }).then(loadBooks);
   };
 
   return (
-    <div>
-      <h1>Books</h1>
-      <BookForm
-        onSubmit={editing ? data => handleUpdate(editing.id, data) : handleCreate}
-        initialData={editing}
-      />
-      <BookList books={books} onEdit={setEditing} onDelete={handleDelete} />
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6 space-y-6">
+        <h1 className="text-3xl font-bold text-gray-800 text-center">📚 Book Manager</h1>
+
+        <BookForm
+          onSubmit={editing ? data => handleUpdate(editing.id, data) : handleCreate}
+          initialData={editing}
+        />
+
+        <BookList books={books} onEdit={setEditing} onDelete={handleDelete} />
+      </div>
     </div>
   );
 }
-
-export default App;
