@@ -10,7 +10,7 @@ APP_NS="apps"
 # Start a local cluster if one is not running
 if ! minikube status >/dev/null 2>&1; then
   echo "Starting Minikube cluster..."
-  minikube start
+  minikube start --driver=kvm2
 fi
 
 # Create namespaces if they do not exist

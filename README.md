@@ -33,6 +33,27 @@ cd frontend
 npm test -- --watchAll=false
 ```
 
+## Install minikube
+
+```bash
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+
+sudo apt update
+sudo apt install -y qemu-kvm libvirt-daemon-system virt-manager libvirt-clients bridge-utils
+
+sudo systemctl enable --now libvirtd
+
+sudo usermod -aG libvirt,kvm $USER
+newgrp libvirt
+virsh --connect qemu:///system list --all
+minikube start --driver=kvm2
+sudo systemctl enable --now libvirtd
+
+
+```
+
 ### OpenTofu
 ```bash
 cd infrastructure
