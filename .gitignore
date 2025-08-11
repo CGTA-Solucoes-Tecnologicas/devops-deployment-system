@@ -1,0 +1,50 @@
+# ---------------------------
+# OpenTofu / Terraform (IaC)
+# ---------------------------
+.terraform/
+.terraform.tfstate.lock.info
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+*.auto.tfvars
+
+# Keep the lock file committed for reproducible provider versions:
+#! .terraform.lock.hcl    # <— DO NOT ignore this (remove the "!" if you want to force include)
+
+# ---------------------------
+# Helm (optional)
+# ---------------------------
+# Charts usually should be committed; no ignore needed.
+# If you vendor dependencies:
+charts/*/charts/
+
+# ---------------------------
+# Node / Frontend / Backend
+# ---------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+.env
+.env.*
+dist/
+build/
+coverage/
+.cache/
+.next/
+out/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
