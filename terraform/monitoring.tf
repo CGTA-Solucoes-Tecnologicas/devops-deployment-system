@@ -5,14 +5,13 @@ resource "helm_release" "monitoring" {
   chart      = "kube-prometheus-stack"
   version    = "58.5.3"
 
-  # Permite que o Prometheus enxergue ServiceMonitors / PodMonitors em QUALQUER namespace
   values = [yamlencode({
     prometheus = {
       prometheusSpec = {
         serviceMonitorSelectorNilUsesHelmValues = false
-        serviceMonitorNamespaceSelector         = {}   # <—
+        serviceMonitorNamespaceSelector         = {}
         podMonitorSelectorNilUsesHelmValues     = false
-        podMonitorNamespaceSelector             = {}   # <—
+        podMonitorNamespaceSelector             = {}
       }
     }
 
