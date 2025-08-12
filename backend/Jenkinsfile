@@ -35,7 +35,7 @@ pipeline {
           fi
           if ! command -v kubectl >/dev/null 2>&1; then
             curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+            chmod +x kubectl && mv kubectl /usr/local/bin/
           fi
         '''
       }

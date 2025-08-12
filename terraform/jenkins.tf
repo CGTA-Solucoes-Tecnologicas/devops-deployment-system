@@ -38,6 +38,7 @@ resource "helm_release" "jenkins" {
         "credentials-binding",
         "matrix-auth",
         "kubernetes",
+        "kubernetes-cli",
         "nodejs"
       ]
 

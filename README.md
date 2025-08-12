@@ -174,3 +174,12 @@ minikube kubectl -- -n infra logs pod/jenkins-0 -c jenkins -f
 
 # Sidecar de reload do JCasC (só roda quando o Jenkins já está de pé)
 minikube kubectl -- -n infra logs pod/jenkins-0 -c config-reload -f
+
+
+
+docker build -t backend:local ./backend 
+minikube image load backend:local
+
+
+docker build -t frontend:local ./frontend 
+minikube image load frontend:local
