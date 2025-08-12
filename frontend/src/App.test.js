@@ -1,110 +1,101 @@
-// App.test.js
+// src/App.test.js
 import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { booksApi } from './api/books';
 import App from './App';
 
-global.fetch = jest.fn();
+// IMPORTANT: mock the books API module
+jest.mock('./api/books', () => ({
+  booksApi: {
+    list: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  },
+}));
 
-const API = 'http://localhost:3001/books';
-
-// Small helper to mock fetch JSON responses in order
-function mockJsonOnce(data, { status = 200 } = {}) {
-  fetch.mockResolvedValueOnce({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => data,
-  });
-}
 
 beforeEach(() => {
-  // Reset mocks before each test to avoid cross-test interference
-  fetch.mockReset();
+  jest.clearAllMocks();
 });
 
-describe('Books CRUD', () => {
+describe('Books CRUD using booksApi mock', () => {
   it('loads empty list on start', async () => {
-    // initial GET
-    mockJsonOnce([]); // GET /books
+    // first load
+    booksApi.list.mockResolvedValueOnce([]);
 
     render(<App />);
 
-    // Ensure initial fetch was called correctly
-    expect(fetch).toHaveBeenCalledWith(`${API}`);
+    // wait for initial call to happen
+    await waitFor(() => expect(booksApi.list).toHaveBeenCalledTimes(1));
 
-    // Nothing rendered yet (no books)
-    // You can assert presence of the title or form inputs as a smoke test
-    expect(await screen.findByText(/Books/i)).toBeInTheDocument();
+    // page title
+    expect(screen.getByRole('heading', { name: /book manager/i })).toBeInTheDocument();
   });
 
   it('creates a book', async () => {
     // initial GET -> []
-    mockJsonOnce([]); // GET /books
+    booksApi.list.mockResolvedValueOnce([]);
 
     render(<App />);
 
-    // POST /books -> created item
-    mockJsonOnce({ id: 1, title: 'Test', author: 'Author' }, { status: 201 });
-    // follow-up GET /books -> list with created item
-    mockJsonOnce([{ id: 1, title: 'Test', author: 'Author' }]);
+    // POST /books
+    booksApi.create.mockResolvedValueOnce({ id: 1, title: 'Test', author: 'Author' });
+    // follow-up GET -> now has the created book
+    booksApi.list.mockResolvedValueOnce([{ id: 1, title: 'Test', author: 'Author' }]);
 
-    fireEvent.change(screen.getByPlaceholderText(/Title/i), {
-      target: { value: 'Test' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(/Author/i), {
-      target: { value: 'Author' },
-    });
-    fireEvent.click(screen.getByText(/Create/i));
+    fireEvent.change(screen.getByPlaceholderText(/title/i), { target: { value: 'Test' } });
+    fireEvent.change(screen.getByPlaceholderText(/author/i), { target: { value: 'Author' } });
+    fireEvent.click(screen.getByRole('button', { name: /create/i }));
 
-    // wait until the new item appears
+    // appears on screen
     await screen.findByText(/Test/);
-    expect(screen.getByText(/by Author/)).toBeInTheDocument();
+    expect(screen.getByText(/by Author/i)).toBeInTheDocument();
 
-    // Optionally assert fetch calls
-    expect(fetch).toHaveBeenCalledWith(API, expect.objectContaining({ method: 'POST' }));
+    expect(booksApi.create).toHaveBeenCalledWith({ title: 'Test', author: 'Author' });
+    // list called again after create
+    expect(booksApi.list).toHaveBeenCalledTimes(2);
   });
 
   it('updates a book', async () => {
     // initial GET -> one book
-    mockJsonOnce([{ id: 1, title: 'Test', author: 'Author' }]); // GET
+    booksApi.list.mockResolvedValueOnce([{ id: 1, title: 'Test', author: 'Author' }]);
 
     render(<App />);
 
-    // PUT /books/1 -> updated
-    mockJsonOnce({ id: 1, title: 'Updated', author: 'Author' });
+    // PUT /books/1
+    booksApi.update.mockResolvedValueOnce({ id: 1, title: 'Updated', author: 'Author' });
     // follow-up GET -> updated list
-    mockJsonOnce([{ id: 1, title: 'Updated', author: 'Author' }]);
+    booksApi.list.mockResolvedValueOnce([{ id: 1, title: 'Updated', author: 'Author' }]);
 
-    fireEvent.click(await screen.findByText(/Edit/i));
-    fireEvent.change(screen.getByPlaceholderText(/Title/i), {
-      target: { value: 'Updated' },
-    });
-    fireEvent.click(screen.getByText(/Update/i));
+    fireEvent.click(await screen.findByText(/edit/i));
+    fireEvent.change(screen.getByPlaceholderText(/title/i), { target: { value: 'Updated' } });
+    fireEvent.click(screen.getByRole('button', { name: /update/i }));
 
     await screen.findByText(/Updated/);
-    expect(screen.getByText(/by Author/)).toBeInTheDocument();
+    expect(screen.getByText(/by Author/i)).toBeInTheDocument();
 
-    expect(fetch).toHaveBeenCalledWith(`${API}/1`, expect.objectContaining({ method: 'PUT' }));
+    expect(booksApi.update).toHaveBeenCalledWith(1, { title: 'Updated', author: 'Author' });
   });
 
   it('deletes a book', async () => {
     // initial GET -> one book
-    mockJsonOnce([{ id: 1, title: 'ToRemove', author: 'A' }]);
+    booksApi.list.mockResolvedValueOnce([{ id: 1, title: 'ToRemove', author: 'A' }]);
 
     render(<App />);
 
     // DELETE /books/1
-    fetch.mockResolvedValueOnce({ ok: true, status: 204, json: async () => ({}) });
+    booksApi.remove.mockResolvedValueOnce(null);
     // follow-up GET -> empty
-    mockJsonOnce([]);
+    booksApi.list.mockResolvedValueOnce([]);
 
     fireEvent.click(await screen.findByRole('button', { name: /Delete/i }));
 
-    // After deletion, the item should NOT be on screen
     await waitFor(() => {
-      expect(screen.queryByText(/ToRemove/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/by A/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/ToRemove/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/by A/i)).not.toBeInTheDocument();
     });
 
-    expect(fetch).toHaveBeenCalledWith(`${API}/1`, expect.objectContaining({ method: 'DELETE' }));
+    expect(booksApi.remove).toHaveBeenCalledWith(1);
   });
 });

@@ -89,11 +89,9 @@ The script above simply automates the following commands:
 
 ```bash
 # Start a local cluster
-minikube start
+minikube start --driver=kvm2 --cpus=2 --memory=4g
 
-# Create namespaces
-kubectl create namespace infra
-kubectl create namespace apps
+
 
 # Apply infrastructure with OpenTofu
 cd infrastructure
