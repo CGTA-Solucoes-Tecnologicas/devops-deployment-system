@@ -26,7 +26,7 @@ pipeline {
       }
     }
 
-    stage('Install helm/kubectl') {
+    stage('Install helm/kubectl and Deploy via Helm') {
       steps {
         sh '''
           set -eux
@@ -50,23 +50,29 @@ pipeline {
           helm version
           kubectl version --client
 
+          kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
+            helm upgrade --install backend ${CHART} \
+              -n ${NAMESPACE} \
+              --reset-values \
+              -f "$CHART"/values-backend.yaml \
+              --wait --timeout 10m --debug
         '''
       }
     }
 
-    stage('Deploy via Helm') {
-      steps {
-        sh '''
-          set -eux
-          kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
-          helm upgrade --install backend ${CHART} \
-            -n ${NAMESPACE} \
-            --reset-values \
-            -f "$CHART"/values-backend.yaml \
-            --wait --timeout 10m --debug
-        '''
-      }
-    }
+    // stage('Deploy via Helm') {
+    //   steps {
+    //     sh '''
+    //       set -eux
+    //       kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
+    //       helm upgrade --install backend ${CHART} \
+    //         -n ${NAMESPACE} \
+    //         --reset-values \
+    //         -f "$CHART"/values-backend.yaml \
+    //         --wait --timeout 10m --debug
+    //     '''
+    //   }
+    // }
   }
 
   post {
