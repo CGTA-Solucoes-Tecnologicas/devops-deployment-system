@@ -30,13 +30,26 @@ pipeline {
       steps {
         sh '''
           set -eux
-          if ! command -v helm >/dev/null 2>&1; then
-            curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          mkdir -p "$HOME/bin"
+          export PATH="$HOME/bin:$PATH"
+
+          # Install kubectl if missing
+          if ! command -v kubectl >/dev/null; then
+            KUBECTL_VERSION="v1.33.1"
+            curl -fsSL -o "$HOME/bin/kubectl" "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+            chmod +x "$HOME/bin/kubectl"
           fi
-          if ! command -v kubectl >/dev/null 2>&1; then
-            curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            chmod +x kubectl && mv kubectl /usr/local/bin/
+
+          # Install helm if missing
+          if ! command -v helm >/dev/null; then
+            export HELM_VERSION="v3.18.4"
+            curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+            | USE_SUDO=false HELM_INSTALL_DIR=$HOME/bin bash
           fi
+
+          helm version
+          kubectl version --client
+
         '''
       }
     }
