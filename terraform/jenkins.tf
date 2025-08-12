@@ -44,7 +44,7 @@ resource "helm_release" "jenkins" {
         { name = "DEFAULT_BRANCH",     value = "main" }
       ]
 
-      # JCasC + Job DSL: cria um GitHub Organization Folder que auto-descobre repos com Jenkinsfile
+      # JCasC + Job DSL: create a GitHub Organization Folder wich auto-discory repos with Jenkinsfile
       JCasC = {
         configScripts = {
           "jenkins-casc.yaml" = <<-EOT
@@ -72,7 +72,7 @@ resource "helm_release" "jenkins" {
                   import jenkins.scm.impl.trait.WildcardSCMHeadFilterTrait;
                   import org.jenkinsci.plugins.github_branch_source.*;
 
-                  def org  = System.getenv('GITHUB_ORG') ?: 'example';
+                  def org  = System.getenv('GITHUB_ORG');
                   def creds = System.getenv('GIT_CREDENTIALS_ID');
                   def defBranch = System.getenv('DEFAULT_BRANCH') ?: 'main';
 
