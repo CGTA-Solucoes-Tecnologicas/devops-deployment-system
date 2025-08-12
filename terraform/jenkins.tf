@@ -46,8 +46,10 @@ resource "helm_release" "jenkins" {
 
       # JCasC + Job DSL: create a GitHub Organization Folder wich auto-discory repos with Jenkinsfile
       JCasC = {
+        defaultConfig = false   # <— disable default chart config to avoid conflicts
         configScripts = {
-          "jenkins-casc.yaml" = <<-EOT
+          # ❗️ do NOT end with .yaml, the sidecar appends it
+          "jenkins-casc" = <<-EOT
             jenkins:
               systemMessage: "Managed by JCasC (Helm)"
               numExecutors: 2
@@ -85,10 +87,7 @@ resource "helm_release" "jenkins" {
                         // Discover branches & PRs
                         traits {
                           gitHubBranchDiscovery { strategyId(1) }               // build branches
-                          originPullRequestDiscoveryTrait { strategyId(1) }     # build PRs from origin
-                          forkPullRequestDiscoveryTrait {
-                            strategyId(1); trust(class: 'TrustPermission')
-                          }
+                          originPullRequestDiscoveryTrait { strategyId(1) }     // build PRs from origin
                         }
                       }
                     }
