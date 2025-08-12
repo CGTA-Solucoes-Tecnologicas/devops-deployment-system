@@ -3,7 +3,7 @@ import BookList from './BookList';
 import BookForm from './BookForm';
 import './styles.css';
 
-const api = 'http://localhost:3001';
+const api = `http:${process.env.REACT_APP_HOST || 'localhost'}:${process.env.REACT_APP_API_PORT || 3001}`;
 
 export default function App() {
   const [books, setBooks] = useState([]);

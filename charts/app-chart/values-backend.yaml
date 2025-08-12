@@ -1,0 +1,30 @@
+image:
+  repository: backend
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 3001
+
+# Keep probes disabled while stabilizing (enable later)
+livenessProbe: null
+readinessProbe: null
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "3001"
+
+# Optional: pass PORT explicitly if your app uses it
+env:
+  - name: PORT
+    value: "3001"
+
+# Optional: tighter resources for Minikube
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

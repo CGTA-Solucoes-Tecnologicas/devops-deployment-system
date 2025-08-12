@@ -14,9 +14,13 @@ eval "$(minikube docker-env)"
 
 echo ">> Building BACKEND image ($BACKEND_IMG)"
 docker build -t "$BACKEND_IMG" "$BACKEND_DIR"
+minikube image build -t "$BACKEND_IMG" ./backend
+
 
 echo ">> Building FRONTEND image ($FRONTEND_IMG)"
 docker build -t "$FRONTEND_IMG" "$FRONTEND_DIR"
+minikube image build -t "$FRONTEND_IMG" ./fronend
+
 
 echo ">> Images now stored inside the Minikube VM:"
 docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep -E 'backend|frontend'
