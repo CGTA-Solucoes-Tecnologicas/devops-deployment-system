@@ -1,5 +1,7 @@
-# Uses the official Jenkins chart (charts.jenkins.io) with admin creds,
-# Jenkins with JCasC + GitHub Organization Folder auto-discovery
+# Jenkins via Helm + JCasC + Job DSL
+# Cria dois Multibranch Pipeline Jobs:
+# - frontend -> lê frontend/Jenkinsfile
+# - backend  -> lê backend/Jenkinsfile
 
 variable "jenkins_admin_user" { default = "admin" }
 variable "jenkins_admin_pass" { default = "pass" }
@@ -11,97 +13,103 @@ resource "helm_release" "jenkins" {
   chart      = "jenkins"
   version    = "5.8.75"
 
-  wait             = true
-  timeout          = 1200
-  atomic           = true
-  cleanup_on_fail  = true
+  wait            = true
+  timeout         = 1200
+  atomic          = true
+  cleanup_on_fail = true
 
+  # in jenkins.tf (inside helm_release "jenkins")
   values = [yamlencode({
     controller = {
       admin = {
         username = var.jenkins_admin_user
         password = var.jenkins_admin_pass
       }
-      serviceType = "NodePort"     # expose on Minikube
+      serviceType    = "NodePort"
 
+      # Plugins needed for JCasC + Job DSL + Multibranch Pipelines
       installPlugins = [
         "configuration-as-code",
         "job-dsl",
         "workflow-aggregator",
         "workflow-multibranch",
         "git",
-        "github-branch-source",
-        "branch-api",
         "credentials",
         "credentials-binding",
-        "matrix-auth"
+        "matrix-auth",
+        "kubernetes"
       ]
 
-      # Env vars consumed by the Job DSL (edit these!)
       containerEnv = [
-        { name = "GITHUB_ORG",        value = "CGTA-Solucoes-Tecnologicas" },
-        { name = "GIT_CREDENTIALS_ID", value = "" },            
+        { name = "REPO_URL",          value = "https://github.com/CGTA-Solucoes-Tecnologicas/devops-deployment-system.git" },
+        { name = "GIT_CREDENTIALS_ID", value = "" },     # set if repo is private
         { name = "DEFAULT_BRANCH",     value = "main" }
       ]
 
-      # JCasC + Job DSL: create a GitHub Organization Folder wich auto-discory repos with Jenkinsfile
+      # Jenkins Configuration as Code + embedded Job DSL
       JCasC = {
-        defaultConfig = false   # <— disable default chart config to avoid conflicts
+        defaultConfig = false
         configScripts = {
-          # ❗️ do NOT end with .yaml, the sidecar appends it
+          # Do NOT end with .yaml (sidecar appends .yaml automatically)
           "jenkins-casc" = <<-EOT
             jenkins:
               systemMessage: "Managed by JCasC (Helm)"
               numExecutors: 2
               mode: NORMAL
-              # If you plan to use GitHub webhooks, set a stable public URL here (Ingress is recommended):
-              # location:
-              #   url: "http://jenkins.your-domain.example/"
-
-            # (Optional) Example of Git token credential for private repos:
-            #credentials:
-            #  system:
-            #    domainCredentials:
-            #      - credentials:
-            #          - string:
-            #              id: "git-token"
-            #              description: "GitHub Personal Access Token"
-            #              secret: "REPLACE_ME"
 
             jobs:
               - script: >
-                  import jenkins.branch.OrganizationFolder;
-                  import jenkins.scm.impl.trait.WildcardSCMHeadFilterTrait;
-                  import org.jenkinsci.plugins.github_branch_source.*;
-
-                  def org  = System.getenv('GITHUB_ORG');
+                  def repo = System.getenv('REPO_URL');
                   def creds = System.getenv('GIT_CREDENTIALS_ID');
-                  def defBranch = System.getenv('DEFAULT_BRANCH') ?: 'main';
+                  def defBr = System.getenv('DEFAULT_BRANCH') ?: 'main';
 
-                  organizationFolder("apps") {
-                    displayName("Apps (auto-discovered)")
-                    organizations {
-                      github {
-                        repoOwner(org)
-                        if (creds) { credentialsId(creds) }
-                        // Discover branches & PRs
-                        traits {
-                          gitHubBranchDiscovery { strategyId(1) }               // build branches
-                          originPullRequestDiscoveryTrait { strategyId(1) }     // build PRs from origin
+                  multibranchPipelineJob('frontend') {
+                    displayName('frontend (MBP)')
+                    branchSources {
+                      branchSource {
+                        source {
+                          git {
+                            id('frontend-src')
+                            remote(repo)
+                            if (creds) { credentialsId(creds) }
+                          }
+                        }
+                        strategy {
+                          defaultBranchPropertyStrategy { props { } }
                         }
                       }
                     }
-                    projectFactories {
-                      workflowMultiBranchProjectFactory {
-                        scriptPath("Jenkinsfile")   // any repo with a Jenkinsfile is onboarded
+                    factory {
+                      workflowBranchProjectFactory {
+                        scriptPath('frontend/Jenkinsfile')
                       }
                     }
-                    orphanedItemStrategy {
-                      discardOldItems { numToKeep(20) }
+                    // No webhook? Do scan periodically:
+                    triggers { periodicFolderTrigger { interval('2m') } }
+                  }
+
+                  multibranchPipelineJob('backend') {
+                    displayName('backend (MBP)')
+                    branchSources {
+                      branchSource {
+                        source {
+                          git {
+                            id('backend-src')
+                            remote(repo)
+                            if (creds) { credentialsId(creds) }
+                          }
+                        }
+                        strategy {
+                          defaultBranchPropertyStrategy { props { } }
+                        }
+                      }
                     }
-                    // Scan every 2 minutes (works without webhooks)
-                    triggers { periodicFolderTrigger { interval("2m") } }
-                    // If you prefer webhook, comment out the line above and configure githubPush() in jobs, and the webhook in GitHub.
+                    factory {
+                      workflowBranchProjectFactory {
+                        scriptPath('backend/Jenkinsfile')
+                      }
+                    }
+                    triggers { periodicFolderTrigger { interval('2m') } }
                   }
           EOT
         }
@@ -113,4 +121,5 @@ resource "helm_release" "jenkins" {
       }
     }
   })]
+
 }

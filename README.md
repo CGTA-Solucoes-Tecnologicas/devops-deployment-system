@@ -152,3 +152,25 @@ dashboards.
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to
 this project.
+
+
+
+
+tofu apply -auto-approve
+
+minikube kubectl -- -n infra delete sts jenkins
+minikube kubectl -- -n infra delete pvc jenkins
+
+
+# StatefulSet status
+minikube kubectl -- -n infra get sts jenkins
+minikube kubectl -- -n infra rollout status sts/jenkins
+
+# LOGS: init container (instala plugins / aplica config)
+minikube kubectl -- -n infra logs pod/jenkins-0 -c init -f
+
+# Depois que o init sair (Terminated/Completed), acompanhe o Jenkins:
+minikube kubectl -- -n infra logs pod/jenkins-0 -c jenkins -f
+
+# Sidecar de reload do JCasC (só roda quando o Jenkins já está de pé)
+minikube kubectl -- -n infra logs pod/jenkins-0 -c config-reload -f
