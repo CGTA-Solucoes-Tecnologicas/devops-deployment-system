@@ -1,11 +1,12 @@
 pipeline {
   agent any
-
+  tools { nodejs 'node18' } 
   environment {
     NAMESPACE = "apps"
     CHART     = "charts/app-chart"
     IMAGE     = "backend:local"
     PORT      = "3001"
+    CI        = 'true'
   }
 
   stages {

@@ -37,7 +37,8 @@ resource "helm_release" "jenkins" {
         "credentials",
         "credentials-binding",
         "matrix-auth",
-        "kubernetes"
+        "kubernetes",
+        "nodejs"
       ]
 
       containerEnv = [
@@ -52,6 +53,15 @@ resource "helm_release" "jenkins" {
         configScripts = {
           # Do NOT end with .yaml (sidecar appends .yaml automatically)
           "jenkins-casc" = <<-EOT
+            tool:
+              nodejs:
+                installations:
+                  - name: "node18"
+                    properties:
+                      - installSource:
+                          installers:
+                            - nodeJSInstaller:
+                                id: "18.20.3"
             jenkins:
               systemMessage: "Managed by JCasC (Helm)"
               numExecutors: 2
