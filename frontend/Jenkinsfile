@@ -1,0 +1,64 @@
+pipeline {
+  agent any
+
+  environment {
+    NAMESPACE = "apps"
+    CHART     = "charts/app-chart"
+    IMAGE     = "frontend:local"
+    PORT      = "80"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Frontend tests & build') {
+      steps {
+        dir('frontend') {
+          sh '''
+            set -eux
+            if [ -f package-lock.json ]; then npm ci; else npm install; fi
+            npm test -- --ci
+            npm run build || true   # optional static build if applicable
+          '''
+        }
+      }
+    }
+
+    stage('Install helm/kubectl') {
+      steps {
+        sh '''
+          set -eux
+          if ! command -v helm >/dev/null 2>&1; then
+            curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          fi
+          if ! command -v kubectl >/dev/null 2>&1; then
+            curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+          fi
+        '''
+      }
+    }
+
+    stage('Deploy via Helm') {
+      steps {
+        sh '''
+          set -eux
+          kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
+          helm upgrade --install frontend ${CHART} \
+            -n ${NAMESPACE} \
+            --reset-values \
+            -f "$CHART"/values-frontend.yaml \
+            --wait --timeout 10m --debug
+        '''
+      }
+    }
+  }
+
+  post {
+    always {
+      sh 'kubectl -n ${NAMESPACE} get all || true'
+    }
+  }
+}
