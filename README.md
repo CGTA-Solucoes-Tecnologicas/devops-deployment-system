@@ -177,9 +177,13 @@ minikube kubectl -- -n infra logs pod/jenkins-0 -c config-reload -f
 
 
 
-docker build -t backend:local ./backend 
+docker build -t backend:local ./backend
 minikube image load backend:local
 
 
-docker build -t frontend:local ./frontend 
+docker build -t frontend:local ./frontend
 minikube image load frontend:local
+
+minikube service jenkins -n infra --url
+minikube service -n infra kube-prometheus-grafana --url
+minikube service -n apps backend-app-chart --url
